@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Soundwalk: Brera Academy</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #121212;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* 启动与授权遮罩层 */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(18, 18, 18, 0.95);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #start-screen h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #38bdf8;
+        }
+
+        #start-screen p {
+            font-size: 1rem;
+            color: #a1a1aa;
+            margin-bottom: 30px;
+            max-width: 400px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background-color: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 顶部状态栏 */
+        #status-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: white;
+            padding: 10px 15px 10px 20px;
+            border-radius: 20px;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ef4444;
+        }
+
+        .status-dot.active {
+            background-color: #22c55e;
+        }
+
+        #refresh-gps-btn {
+            pointer-events: auto; /* 允许点击刷新按钮 */
+        }
+        #refresh-gps-btn:active {
+            transform: rotate(180deg);
+            transition: transform 0.3s;
+        }
+
+        /* 左上角模拟开关面板样式 */
+        #sim-toggle-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #38bdf8;
+            padding: 8px 12px;
+            border-radius: 10px;
+            z-index: 600;
+            display: none; /* 启动后显示 */
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #sim-toggle-container label {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #sim-toggle {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            margin: 0;
+        }
+
+        /* 右上角编辑开关面板样式 */
+        #edit-toggle-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #38bdf8;
+            padding: 8px 12px;
+            border-radius: 10px;
+            z-index: 600;
+            display: none; /* 启动后显示 */
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #edit-toggle-container label {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #edit-toggle {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            margin: 0;
+        }
+
+        /* 底部播放状态面板固定在底部 */
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            z-index: 600;
+            display: none; /* 启动后显示 */
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            width: 90%;
+            max-width: 320px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background-color: #38bdf8;
+            color: #0f172a;
+            font-weight: bold;
+        }
+
+        #active-sounds-info {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        .user-marker {
+            background-color: #38bdf8;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #38bdf8;
+            transition: all 0.3s ease;
+        }
+
+        /* 编辑控制点样式 */
+        .static-dot {
+            background-color: #facc15;
+            border: 2px solid #121212;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0,0,0,0.8);
+            transition: transform 0.2s;
+        }
+        .static-dot:hover {
+            transform: scale(1.3);
+        }
+        .resize-handle {
+            background-color: #22c55e;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: nwse-resize;
+            box-shadow: 0 0 8px #22c55e;
+        }
+        .move-handle {
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px dashed #facc15;
+            border-radius: 50%;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .move-handle::after {
+            content: '✥';
+            color: #facc15;
+            font-size: 16px;
+        }
+
+        /* 信息点样式 */
+        .info-dot {
+            width: 24px !important; 
+            height: 24px !important;
+            padding: 0 !important; 
+            box-sizing: border-box; 
+            background-color: rgba(56, 189, 248, 0.9);
+            color: #121212;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: "Times New Roman", Georgia, serif;
+            font-weight: bold;
+            font-style: italic;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        .info-dot:hover {
+            transform: scale(1.2);
+        }
+        .info-dot-text {
+            transform: translate(-1px, 0px);
+        }
+
+        /* 地图原生气泡（Popup）暗黑聊天框风格化 */
+        .dark-chat-popup .leaflet-popup-content-wrapper {
+            background-color: #1e293b;
+            color: #cbd5e1;
+            border-radius: 12px;
+            padding: 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+        .dark-chat-popup .leaflet-popup-tip {
+            background-color: #1e293b;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.3);
+            border-right: 1px solid rgba(56, 189, 248, 0.3);
+        }
+        .dark-chat-popup .leaflet-popup-content {
+            margin: 15px 18px;
+            line-height: 1.6;
+            min-width: 200px;
+        }
+        .dark-chat-popup h3 {
+            color: #38bdf8;
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        .dark-chat-popup p {
+            margin: 0;
+            font-size: 0.95rem;
+            white-space: pre-wrap; 
+        }
+        .dark-chat-popup a.leaflet-popup-close-button {
+            color: #94a3b8;
+            padding: 8px 8px 0 0;
+            font-size: 18px;
+        }
+        .dark-chat-popup a.leaflet-popup-close-button:hover {
+            color: #38bdf8;
+            background: transparent;
+        }
+
+        /* 参数设置面板样式 */
+        .settings-form-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #cbd5e1;
+            font-size: 0.95rem;
+        }
+        .settings-form-group input[type="number"] {
+            background-color: #0f172a;
+            border: 1px solid #333;
+            color: #38bdf8;
+            padding: 8px;
+            border-radius: 5px;
+            width: 80px;
+            text-align: right;
+            font-family: monospace;
+        }
+        .settings-form-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1>Brera Soundwalk</h1>
+        <p>Segui la mappa per esplorare il paesaggio sonoro nascosto dell'Accademia di Belle Arti di Brera.<br><br>Per un'esperienza ottimale, indossa le cuffie.</p>
+        <button class="btn" id="start-btn">INIZIA</button>
+    </div>
+
+    <!-- 左上角模拟模式开关 -->
+    <div id="sim-toggle-container">
+        <label for="sim-toggle">Modalità simulata</label>
+        <input type="checkbox" id="sim-toggle">
+    </div>
+
+    <!-- 右上角编辑模式开关 -->
+    <div id="edit-toggle-container">
+        <label for="edit-toggle">Modalità modifica</label>
+        <input type="checkbox" id="edit-toggle">
+    </div>
+
+    <div id="status-bar">
+        <div class="status-dot" id="gps-dot"></div>
+        <span id="gps-status-text">In attesa della posizione GPS...</span>
+        <!-- 新增：刷新 GPS 按钮，防止定位卡死 -->
+        <button id="refresh-gps-btn" style="background: none; border: none; color: #38bdf8; cursor: pointer; padding: 0 5px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;" title="Aggiorna GPS">
+            ↻
+        </button>
+    </div>
+
+    <div id="controls">
+        <div id="active-sounds-info">Non è stato ancora inserito alcun campo sonoro.</div>
+        <div class="toggle-btn" id="export-config" style="background-color: #facc15; color: #121212; border-radius: 10px; width: 100%; margin-top: 5px; display: none;">💾 导出当前声场配置</div>
+    </div>
+
+    <!-- 导出代码的弹窗 UI -->
+    <div id="export-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+        <div style="background: #1e293b; padding: 20px; border-radius: 15px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: white; margin-top: 0;">最新的坐标配置：</h3>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 10px;">请复制下方代码发给我，或者直接替换源文件中的 const zones = [...] 部分。</p>
+            <textarea id="export-textarea" style="width: 100%; height: 250px; background: #0f172a; color: #38bdf8; border: 1px solid #333; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px;"></textarea>
+            <button class="btn" id="close-modal-btn" style="margin-top: 15px; width: 100%; padding: 10px;">关闭窗口</button>
+        </div>
+    </div>
+
+    <!-- 声场参数设置弹窗 -->
+    <div id="settings-modal" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+        <div style="background: #1e293b; padding: 20px; border-radius: 15px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="color: white; margin-top: 0; margin-bottom: 20px;">参数调节: <span id="settings-zone-name" style="color: #38bdf8;"></span></h3>
+            
+            <div class="settings-form-group">
+                <label for="setting-loop">Loop</label>
+                <input type="checkbox" id="setting-loop">
+            </div>
+            
+            <div class="settings-form-group">
+                <label for="setting-play-to-end">Play to end</label>
+                <input type="checkbox" id="setting-play-to-end">
+            </div>
+
+            <div class="settings-form-group">
+                <label for="setting-fade-in">Fade In (ms)</label>
+                <input type="number" id="setting-fade-in" step="100" min="0">
+            </div>
+
+            <div class="settings-form-group">
+                <label for="setting-fade-out">Fade Out (ms)</label>
+                <input type="number" id="setting-fade-out" step="100" min="0">
+            </div>
+
+            <button class="btn" id="save-settings-btn" style="margin-top: 15px; width: 100%; padding: 10px;">保存并继续编辑位置</button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // =========================================================================
+        // 🛠️ 开发者测试开关 (Developer Mode Config) 🛠️
+        // 修改下方的 false 为 true，即可在页面上显示出对应的控制按钮，方便你进行测试。
+        // 在最终向公众展示时，请将它们保持为 false。
+        // =========================================================================
+        const SHOW_SIMULATION_TOGGLE = false; // 是否显示左上角的"模拟模式"开关
+        const SHOW_EDIT_TOGGLE = false;       // 是否显示右上角的"编辑模式"开关
+        // =========================================================================
+
+        let map;
+        let userMarker;
+        let gpsWatchId = null;
+        let isSimulationMode = false; // 默认改为 false (真实 GPS 模式)
+
+        // 编辑模式状态变量
+        let editMoveMarker = null;
+        let editResizeMarker = null;
+        let activeEditDot = null;
+        let activeEditZoneId = null;
+        let editDots = []; // 保存所有黄点以便统一开关显示
+
+        const zones = [
+            {
+                id: "zone1_huge",
+                name: "I passi",
+                lat: 45.47194, 
+                lng: 9.18942,
+                radius: 74.0,
+                audioUrl: "https://github.com/biggiewang413/passomarino/raw/refs/heads/main/脚步.mp3",
+                isLoop: true,
+                playToEnd: false,
+                fadeInMs: 1000,
+                fadeOutMs: 1000,
+                color: "#38bdf8",
+                description: "Abbassa lo sguardo sui tuoi passi. Questa strada di ciottoli che stai calpestando è un archivio di traiettorie invisibili.\nCi camminiamo sopra ogni giorno, distratti, mentre il rumore delle nostre scarpe si unisce a quello delle centinaia di persone che, in questo preciso momento, ti passano accanto. Ma se ascolti con attenzione, sotto il frastuono del presente c'è un'eco più profonda. Ogni pietra trattiene il peso dei passi di ieri: gli zoccoli dei cavalli, le scarpe consumate degli studenti dell'Ottocento, la fretta di chi ha cercato qui la propria rivoluzione artistica.\nIl selciato non dimentica. Tu non sei un semplice passante, ma l'ennesimo ritmo che si aggiunge a questa infinita composizione collettiva. Continua a camminare, e ascolta come la tua stessa presenza risuona nella pietra."
+            },
+            {
+                id: "zone2_small_top",
+                name: "Ascolta",
+                lat: 45.47222, 
+                lng: 9.18919,
+                radius: 14.5,
+                audioUrl: "https://github.com/biggiewang413/passomarino/raw/refs/heads/main/人声.mp3",
+                isLoop: false,
+                playToEnd: true, // 仅播放一次并播放至结束
+                fadeInMs: 1000,
+                fadeOutMs: 1000,
+                color: "#38bdf8",
+                description: "Ascolta.\nIl tempo qui non scorre, si accumula, strato dopo strato.\nC’è un silenzio che non è mai vuoto, fatto di passi che hanno smesso di camminare, ma che continuano a risuonare tra i loggiati.\nVedi la luce che taglia la polvere? È la stessa luce che ieri, un secolo fa, accarezzava la tela di qualcun altro.\nI muri respirano il pigmento, trattenendo il fiato tra un colpo di scalpello e un sospiro di delusione. C’è una memoria nell’intonaco, un’eco di sguardi che hanno cercato la bellezza nel buio.\nNon cercare una forma definita. Lasciati abitare dallo spazio.\nSiamo frammenti di un’opera d’arte perennemente incompiuta.\nAscolta il vuoto. Sfiora l'ombra.\nCosa resta, quando tutti se ne vanno, se non il battito invisibile di questo luogo?"
+            },
+            {
+                id: "zone3_small_mid",
+                name: "La finestra sotto terra",
+                lat: 45.47183, 
+                lng: 9.18936,
+                radius: 10.0,
+                audioUrl: "https://github.com/biggiewang413/passomarino/raw/refs/heads/main/地下室.mp3",
+                isLoop: true,
+                playToEnd: false,
+                fadeInMs: 1000,
+                fadeOutMs: 1000,
+                color: "#38bdf8",
+                description: "Guarda in basso. Questo frammento di finestra è la fessura dove il mondo di sopra e il mondo di sotto si sfiorano, senza mai stringersi la mano.\nQui si raccolgono le voci che cadono dai marciapiedi, il vento che spazza il cortile, la polvere che scende e si posa, lenta, come un segreto che nessuno vuole svelare. Sono i suoni nascosti, le frequenze invisibili di Brera. Esistono qui, nell’ombra, respirando sotto il livello dei nostri sguardi distratti.\nPassiamo oltre, ogni giorno, calpestando la loro presenza senza accorgercene. Ma loro restano, a fare da custodi alle fondamenta di questo luogo.\nAscolta questo respiro sotterraneo. È la voce di ciò che vive nell'ombra, e che pure, continua a sostenerci."
+            },
+            {
+                id: "zone4_small_bottom",
+                name: "La finestra dell'aula 21a",
+                lat: 45.47155, 
+                lng: 9.18944,
+                radius: 10.0,
+                audioUrl: "https://github.com/biggiewang413/passomarino/raw/refs/heads/main/21a.mp3",
+                isLoop: true,
+                playToEnd: false,
+                fadeInMs: 1000,
+                fadeOutMs: 1000,
+                color: "#38bdf8",
+                description: "Questa è la finestra dell'aula 21A. Quello che stai per ascoltare non è un rumore casuale, ma la voce stessa di questa stanza.\nDurante una lezione di Sound Design, abbiamo trasformato questo spazio e gli oggetti custoditi al suo interno in strumenti musicali, dando vita a un'improvvisazione estemporanea. Ogni cosa ha risposto al nostro tocco, liberando una musica nascosta che la quotidianità di solito mette a tacere.\nQuesta finestra ha vibrato insieme a noi, catturando l'eco di quel momento in cui lo spazio dell'accademia è diventato pura vibrazione. Ascolta il dialogo tra la materia e l'immaginazione."
+            },
+            {
+                id: "zone5_small_intersect",
+                name: "Gira e cerca la campana",
+                lat: 45.47130, 
+                lng: 9.18960,
+                radius: 12.0,
+                audioUrl: "https://github.com/biggiewang413/passomarino/raw/refs/heads/main/钟.mp3",
+                isLoop: true,
+                playToEnd: false,
+                fadeInMs: 1000,
+                fadeOutMs: 1000,
+                color: "#38bdf8",
+                description: "Ascolta questo rintocco. Irrompe all'improvviso, squarciando il silenzio del tuo cammino.\nOra, fermati. Girati indietro, verso la direzione da cui sei venuto. Guarda lontano, oltre i tetti, verso l’orizzonte: là si erge il campanile, custode invisibile del tempo che passa.\nQuesto suono attraversa lo spazio per raggiungerti, collegando il punto esatto in cui ti trovi con il cuore della città là fuori. È un ponte invisibile fatto di vibrazioni, un richiamo che da secoli misura i passi di chi attraversa questi cortili.\nResta così, immobile, con lo sguardo rivolto al passato del tuo percorso, mentre il bronzo continua a far tremare l'aria intorno a te."
+            },
+            {
+                id: "zone6_botanic",
+                name: "Il laghetto",
+                lat: 45.47101, 
+                lng: 9.18944,
+                radius: 30.1,
+                audioUrl: "https://github.com/biggiewang413/passomarino/raw/refs/heads/main/水.mp3",
+                isLoop: true,
+                playToEnd: false,
+                fadeInMs: 1000,
+                fadeOutMs: 1000,
+                color: "#38bdf8",
+                description: "Ascolta lo scorrere dell'acqua. Chiudi gli occhi per un istante e prova a indovinare: quale suono appartiene al mondo reale e quale sta nascendo dentro le tue cuffie?\nIn questo punto, le frequenze si fondono. L'acqua reale che bagna la pietra si intreccia con la sua stessa eco digitale, creando un flusso continuo che non ha inizio né fine. L'acqua è la memoria fluida di questo luogo: cancella i rumori del giorno e pulisce lo spazio per accogliere i tuoi pensieri.\nNon cercare di separare i due mondi. Lascia che la corrente finta e quella vera diventino un unico respiro. Tu stesso, in questo momento, sei una goccia che attraversa il tempo di Brera."
+            },
+            {
+                id: "zone7_orsini",
+                name: "Gli uccelli",
+                lat: 45.47102, 
+                lng: 9.18992,
+                radius: 35.4,
+                audioUrl: "https://github.com/biggiewang413/passomarino/raw/refs/heads/main/鸟.mp3",
+                isLoop: true,
+                playToEnd: false,
+                fadeInMs: 1000,
+                fadeOutMs: 1000,
+                color: "#38bdf8",
+                description: "Alza lo sguardo verso le fronde. Riesci a sentire il canto degli uccelli?\nOra prova a capire: quel cinguettio che ti sfiora l’orecchio proviene dai rami sopra di te o abita nello spazio digitale delle tue cuffie? Qui, il confine tra la natura reale e la sua riproduzione si dissolve del tutto. Abbiamo catturato la voce di questi alberi per restituirtela, creando un inganno per l’udito in cui il presente e il registrato volano insieme.\nNon importa scoprire la verità. Lascia che i volatili veri e le loro ombre sonore si rincorrano nel tuo ascolto. Brera respira anche attraverso questo canto, sospeso tra il legno della terra e l'aria della tua mente."
+            },
+            {
+                id: "zone8_west_botanic",
+                name: "Respiro",
+                lat: 45.47091, 
+                lng: 9.18880,
+                radius: 25.8,
+                audioUrl: "https://github.com/biggiewang413/passomarino/raw/refs/heads/main/人声2.mp3",
+                isLoop: false,
+                playToEnd: true, // 仅播放一次并播放至结束
+                fadeInMs: 1000,
+                fadeOutMs: 1000,
+                color: "#38bdf8",
+                description: "Ora togli la cuffia , ma non subito. Resta ancora un attimo in ascolto.\n\nIl cerchio si chiude, ma il suono non svanisce; cambia solo consistenza. Il tuo respiro si è unito a quello di queste mura, i tuoi passi si sono confusi con i fantasmi di chi è passato prima di te. Sei diventato, anche solo per un momento, un frammento invisibile di Brera.\n\nPorta con te questo silenzio abitato. Ricorda che ogni spazio ha una voce segreta, che continua a parlare anche quando nessuno la ascolta.\n\nCammina. Torna al rumore del mondo. Ma sappi che una parte di te rimarrà sempre qui, intrappolata tra la polvere, la luce e l’eco di questo cortile."
+            }
+        ];
+
+        const zoneStates = {};
+
+        // 计算圆边上的特定角度的经纬度 (0度为正北，顺时针)
+        function getOffsetPos(lat, lng, radius, angleDeg) {
+            const rad = angleDeg * Math.PI / 180;
+            const dLat = (radius * Math.cos(rad)) / 111320; 
+            const dLng = (radius * Math.sin(rad)) / (111320 * Math.cos(lat * Math.PI / 180));
+            return [lat + dLat, lng + dLng];
+        }
+
+        // 关闭编辑模式
+        function disableEditMode() {
+            if (editMoveMarker) map.removeLayer(editMoveMarker);
+            if (editResizeMarker) map.removeLayer(editResizeMarker);
+            if (activeEditDot) activeEditDot.setOpacity(1);
+            
+            editMoveMarker = null;
+            editResizeMarker = null;
+            activeEditDot = null;
+            activeEditZoneId = null;
+        }
+
+        // 打开设置参数面板
+        function openSettingsModal(zone) {
+            document.getElementById('settings-zone-name').innerText = zone.name;
+            document.getElementById('setting-loop').checked = zone.isLoop;
+            document.getElementById('setting-play-to-end').checked = zone.playToEnd;
+            document.getElementById('setting-fade-in').value = zone.fadeInMs;
+            document.getElementById('setting-fade-out').value = zone.fadeOutMs;
+            
+            document.getElementById('settings-modal').style.display = 'flex';
+            
+            document.getElementById('save-settings-btn').onclick = () => {
+                zone.isLoop = document.getElementById('setting-loop').checked;
+                zone.playToEnd = document.getElementById('setting-play-to-end').checked;
+                zone.fadeInMs = parseInt(document.getElementById('setting-fade-in').value) || 0;
+                zone.fadeOutMs = parseInt(document.getElementById('setting-fade-out').value) || 0;
+                
+                if (zoneStates[zone.id] && zoneStates[zone.id].audio) {
+                    zoneStates[zone.id].audio.loop = zone.isLoop;
+                }
+                
+                document.getElementById('settings-modal').style.display = 'none';
+            };
+        }
+
+        // 开启特定圆圈的编辑模式
+        function enableEditMode(zone, circle, dotMarker, infoMarker) {
+            disableEditMode(); 
+
+            activeEditZoneId = zone.id;
+            activeEditDot = dotMarker;
+            dotMarker.setOpacity(0); 
+
+            const moveIcon = L.divIcon({ className: 'move-handle', iconSize: [24, 24], iconAnchor: [12,12] });
+            editMoveMarker = L.marker([zone.lat, zone.lng], { icon: moveIcon, draggable: true, zIndexOffset: 2000 }).addTo(map);
+
+            const resizeIcon = L.divIcon({ className: 'resize-handle', iconSize: [16, 16], iconAnchor: [8,8] });
+            const trPos = getOffsetPos(zone.lat, zone.lng, zone.radius, 315); // 改为左上角 (315度)
+            editResizeMarker = L.marker(trPos, { icon: resizeIcon, draggable: true, zIndexOffset: 2000 }).addTo(map);
+
+            editMoveMarker.on('drag', function(e) {
+                const newLat = e.latlng.lat;
+                const newLng = e.latlng.lng;
+                circle.setLatLng([newLat, newLng]);
+                zone.lat = newLat;
+                zone.lng = newLng;
+                
+                const newTrPos = getOffsetPos(newLat, newLng, zone.radius, 315);
+                editResizeMarker.setLatLng(newTrPos);
+                dotMarker.setLatLng(newTrPos);
+                
+                // 同步移动信息圆点
+                const newInfoPos = getOffsetPos(newLat, newLng, zone.radius, 45);
+                infoMarker.setLatLng(newInfoPos);
+            });
+
+            editResizeMarker.on('drag', function(e) {
+                const newRadius = getDistance(zone.lat, zone.lng, e.latlng.lat, e.latlng.lng);
+                circle.setRadius(newRadius);
+                zone.radius = newRadius;
+                dotMarker.setLatLng(e.latlng);
+                
+                // 同步调整信息圆点
+                const newInfoPos = getOffsetPos(zone.lat, zone.lng, newRadius, 45);
+                infoMarker.setLatLng(newInfoPos);
+            });
+
+            const onDragEnd = () => {
+                if (userMarker) checkGeofences(userMarker.getLatLng().lat, userMarker.getLatLng().lng);
+            };
+            editMoveMarker.on('dragend', onDragEnd);
+            editResizeMarker.on('dragend', onDragEnd);
+
+            editMoveMarker.on('click', function(e) { 
+                if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent); 
+            });
+            editResizeMarker.on('click', function(e) { 
+                if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent); 
+            });
+
+            openSettingsModal(zone);
+        }
+
+        function initMap() {
+            const centerView = [45.4715, 9.1894];
+            
+            map = L.map('map', {
+                zoomControl: false 
+            }).setView(centerView, 17.5);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            editDots = []; // 初始化清空数组
+            const isEditToggleChecked = document.getElementById('edit-toggle').checked;
+
+            zones.forEach(zone => {
+                const circle = L.circle([zone.lat, zone.lng], {
+                    radius: zone.radius, 
+                    color: zone.color,
+                    fillColor: zone.color,
+                    fillOpacity: 0.1,
+                    weight: 2,
+                    dashArray: '5, 5'
+                }).addTo(map);
+
+                // 1. 信息按钮 (固定在右上角 45度)
+                const infoIcon = L.divIcon({ html: '<span class="info-dot-text">i</span>', className: 'info-dot', iconSize: [24, 24], iconAnchor: [12,12] });
+                const infoPos = getOffsetPos(zone.lat, zone.lng, zone.radius, 45);
+                const infoMarker = L.marker(infoPos, { icon: infoIcon, zIndexOffset: 600 }).addTo(map);
+                
+                // 绑定暗黑风格的聊天气泡
+                infoMarker.bindPopup(
+                    `<div class="chat-bubble-content">
+                        <h3>${zone.name}</h3>
+                        <p>${zone.description}</p>
+                    </div>`,
+                    {
+                        className: 'dark-chat-popup',
+                        offset: [0, -5], // 气泡距离图标微调
+                        maxWidth: 300
+                    }
+                );
+
+                // 2. 编辑黄点 (改为左上角 315度，避免重叠)
+                const dotIcon = L.divIcon({ className: 'static-dot', iconSize: [12, 12], iconAnchor: [6,6] });
+                const trPos = getOffsetPos(zone.lat, zone.lng, zone.radius, 315);
+                const dotMarker = L.marker(trPos, { icon: dotIcon, zIndexOffset: 500 });
+                
+                // 将标记存入数组，仅在开关打开时添加到地图上
+                editDots.push(dotMarker);
+                if (isEditToggleChecked) {
+                    dotMarker.addTo(map);
+                }
+
+                dotMarker.on('click', (e) => {
+                    if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent);
+                    enableEditMode(zone, circle, dotMarker, infoMarker); // 传入 infoMarker 以便拖拽时同步移动
+                });
+
+                circle.on('click', function(e) {
+                    if (activeEditZoneId) {
+                        disableEditMode();
+                        if (e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent);
+                        return;
+                    }
+                    if (isSimulationMode) {
+                        updateUserPosition(e.latlng.lat, e.latlng.lng, "Posizionamento simulato");
+                    }
+                });
+            });
+
+            const userIcon = L.divIcon({
+                className: 'user-marker',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            userMarker = L.marker(centerView, {icon: userIcon, zIndexOffset: 1000}).addTo(map);
+
+            map.on('click', function(e) {
+                if (activeEditZoneId) {
+                    disableEditMode();
+                } else if (isSimulationMode) {
+                    updateUserPosition(e.latlng.lat, e.latlng.lng, "Posizionamento simulato");
+                }
+            });
+        }
+
+        // 新增：安全解锁音频的方法，防止初始化时所有声音同时爆发
+        function unlockAudioEngine() {
+            for (let id in zoneStates) {
+                const audio = zoneStates[id].audio;
+                audio.muted = true; // 强制静音解锁，防止意外爆音
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.muted = false; // 解锁完毕后恢复发声能力
+                }).catch(e => {
+                    console.log("Audio unlock pending:", e);
+                    audio.muted = false;
+                });
+            }
+        }
+
+        function initAudioEngine() {
+            zones.forEach(zone => {
+                const audio = new Audio(zone.audioUrl);
+                
+                audio.loop = zone.isLoop;
+                audio.volume = 0; 
+
+                // 音频自然结束时的处理
+                audio.addEventListener('ended', () => {
+                    zoneStates[zone.id].isPlaying = false;
+                    zoneStates[zone.id].fadeState = 'none'; // 重置淡出状态
+                    zoneStates[zone.id].virtualVolume = 0; // 重置虚拟音量
+                    updateUI();
+                });
+
+                // 核心控制状态新增：virtualVolume 虚拟音量
+                // 这是修复移动端(尤其是iOS)无法修改audio.volume导致无法停止声音的致命Bug的关键！
+                zoneStates[zone.id] = {
+                    config: zone,
+                    audio: audio,
+                    isPlaying: false,
+                    fadeState: 'none', // 'in', 'out', or 'none'
+                    hasEntered: false, 
+                    fadeInterval: null,
+                    virtualVolume: 0 
+                };
+            });
+        }
+        
+        function fadeInAudio(zoneId) {
+            const state = zoneStates[zoneId];
+            if (!state) return;
+            
+            // 防止重复触发淡入
+            if (state.fadeState === 'in') return;
+            state.fadeState = 'in';
+            
+            const audio = state.audio;
+            const duration = state.config.fadeInMs;
+            clearInterval(state.fadeInterval);
+            
+            if (audio.ended) {
+                audio.currentTime = 0;
+            }
+
+            if (audio.paused) {
+                audio.play().catch(e => console.error("Playback failed:", e));
+            }
+            state.isPlaying = true;
+
+            // 依据虚拟音量判断
+            if (duration <= 0 || state.virtualVolume >= 1) {
+                state.virtualVolume = 1;
+                audio.volume = 1;
+                state.fadeState = 'none';
+                return;
+            }
+
+            const stepTime = 50; 
+            const steps = Math.max(1, duration / stepTime);
+            const volumeStep = 1 / steps; 
+
+            state.fadeInterval = setInterval(() => {
+                state.virtualVolume += volumeStep; // 操作虚拟音量
+                
+                if (state.virtualVolume >= 1) {
+                    state.virtualVolume = 1;
+                    audio.volume = 1;
+                    clearInterval(state.fadeInterval);
+                    state.fadeState = 'none';
+                } else {
+                    audio.volume = state.virtualVolume;
+                }
+            }, stepTime);
+        }
+
+        function fadeOutAudio(zoneId, pauseAfterFade = true) {
+            const state = zoneStates[zoneId];
+            if (!state || !state.isPlaying) return;
+            
+            // 防止重复重置淡出倒计时
+            if (state.fadeState === 'out') return;
+            state.fadeState = 'out';
+            
+            const audio = state.audio;
+            const duration = state.config.fadeOutMs;
+            clearInterval(state.fadeInterval);
+
+            // 依据虚拟音量判断
+            if (duration <= 0 || state.virtualVolume <= 0) {
+                state.virtualVolume = 0;
+                audio.volume = 0;
+                if (pauseAfterFade) {
+                    audio.pause();
+                    state.isPlaying = false;
+                }
+                state.fadeState = 'none';
+                updateUI();
+                return;
+            }
+
+            const stepTime = 50;
+            const steps = Math.max(1, duration / stepTime);
+            const volumeStep = 1 / steps;
+
+            state.fadeInterval = setInterval(() => {
+                state.virtualVolume -= volumeStep; // 操作虚拟音量，无视 iOS 对原生 volume 属性的锁死
+                
+                if (state.virtualVolume <= 0.05) { 
+                    state.virtualVolume = 0;
+                    audio.volume = 0;
+                    if (pauseAfterFade) {
+                        audio.pause();
+                        state.isPlaying = false;
+                    }
+                    clearInterval(state.fadeInterval);
+                    state.fadeState = 'none';
+                    updateUI();
+                } else {
+                    audio.volume = state.virtualVolume;
+                }
+            }, stepTime);
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; 
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function checkGeofences(userLat, userLng) {
+            zones.forEach(zone => {
+                const distance = getDistance(userLat, userLng, zone.lat, zone.lng);
+                const isInside = distance <= zone.radius;
+                const state = zoneStates[zone.id];
+
+                if (isInside) {
+                    // 如果是首次进入或者曾短暂停留离开正在 FadeOut 途中，则触发 FadeIn
+                    if (!state.hasEntered || state.fadeState === 'out') {
+                        state.hasEntered = true;
+                        fadeInAudio(zone.id);
+                    }
+                } else {
+                    // 标记为已离开
+                    state.hasEntered = false;
+                    
+                    if (state.isPlaying) {
+                        // 使用 playToEnd 参数判断是否继续播放，若不判断则严格执行 fadeOut
+                        if (!zone.playToEnd) {
+                            fadeOutAudio(zone.id, true);
+                        }
+                    }
+                }
+            });
+
+            // 统一更新UI面板，避免信息冲突
+            updateUI();
+        }
+
+        function updateInfoPanel(activeNames) {
+            const infoDiv = document.getElementById('active-sounds-info');
+            if (activeNames.length > 0) {
+                infoDiv.innerHTML = `🔊 In riproduzione: <br><span style="color:#38bdf8">${activeNames.join('<br>')}</span>`;
+            } else {
+                infoDiv.innerHTML = "Non è stato ancora inserito alcun campo sonoro.";
+            }
+        }
+
+        function updateUI() {
+            let activeNames = [];
+            for (let id in zoneStates) {
+                const state = zoneStates[id];
+                // 正在淡出的不显示在UI上，使其看起来立刻消失
+                if (state.isPlaying && state.fadeState !== 'out') {
+                    if (state.config.playToEnd && !state.hasEntered) {
+                        activeNames.push(state.config.name + " (Play to the end)");
+                    } else {
+                        activeNames.push(state.config.name);
+                    }
+                }
+            }
+            updateInfoPanel(activeNames);
+        }
+
+        function updateUserPosition(lat, lng, accuracyText = "") {
+            userMarker.setLatLng([lat, lng]);
+            map.panTo([lat, lng], {animate: true, duration: 1}); 
+            
+            document.getElementById('gps-dot').classList.add('active');
+            document.getElementById('gps-status-text').innerText = accuracyText || `Posizionamento completato (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+            
+            checkGeofences(lat, lng);
+        }
+
+        function startRealGPS() {
+            if ("geolocation" in navigator) {
+                document.getElementById('gps-status-text').innerText = "Ottenere un GPS reale...";
+                document.getElementById('gps-dot').classList.remove('active');
+                
+                if (gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+                
+                gpsWatchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        if (isSimulationMode) return; 
+                        const { latitude, longitude, accuracy } = position.coords;
+                        updateUserPosition(latitude, longitude, `GPS attivato`);
+                    },
+                    (error) => {
+                        let errMsg = "Errore sconosciuto o limitazioni ambientali";
+                        let isPolicyError = error && error.message && error.message.toLowerCase().includes("permissions policy");
+                        
+                        if (error && error.code === 1) {
+                            errMsg = isPolicyError ? "Le autorizzazioni GPS sono disabilitate nell'ambiente di anteprima." : "Accesso GPS negato";
+                        } else if (error && error.code === 2) {
+                            errMsg = "Posizione non disponibile";
+                        } else if (error && error.code === 3) {
+                            errMsg = "Richiesta scaduta";
+                        }
+                        
+                        console.warn("GPS Warning:", errMsg, error ? error.message : "");
+                        
+                        document.getElementById('gps-status-text').innerText = `Errore di GPS: ${errMsg}`;
+                        document.getElementById('gps-dot').classList.remove('active');
+                        
+                        setTimeout(() => {
+                            if (!isSimulationMode) {
+                                document.getElementById('gps-status-text').innerText = "Suggerimento: per eseguire il test, attivare l'interruttore [Modalità simulata] nell'angolo in alto a sinistra.";
+                            }
+                        }, 3000);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 0,
+                        timeout: 10000
+                    }
+                );
+            } else {
+                alert("Il tuo browser non supporta la geolocalizzazione GPS.");
+            }
+        }
+
+        // 新增：监听用户点击手动刷新GPS按钮
+        document.getElementById('refresh-gps-btn').addEventListener('click', () => {
+            if (!isSimulationMode) {
+                document.getElementById('gps-status-text').innerText = "Riavvio GPS...";
+                document.getElementById('gps-dot').classList.remove('active');
+                startRealGPS();
+            }
+        });
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('status-bar').style.opacity = '1';
+            document.getElementById('status-bar').style.pointerEvents = 'auto';
+            
+            // 根据开发者开关决定是否显示这两个按钮
+            if (SHOW_SIMULATION_TOGGLE) {
+                document.getElementById('sim-toggle-container').style.display = 'flex';
+            }
+            if (SHOW_EDIT_TOGGLE) {
+                document.getElementById('edit-toggle-container').style.display = 'flex';
+            }
+            
+            document.getElementById('controls').style.display = 'flex'; // 显示底部信息面板
+            
+            // 确保开关默认关闭
+            document.getElementById('edit-toggle').checked = false;
+            document.getElementById('sim-toggle').checked = false;
+            
+            initMap();
+            initAudioEngine();
+            unlockAudioEngine(); // 安全解锁所有的媒体对象
+            
+            // 默认启动GPS定位
+            startRealGPS();
+        });
+
+        // 监听模拟开关的变化
+        document.getElementById('sim-toggle').addEventListener('change', (e) => {
+            isSimulationMode = e.target.checked;
+            if (isSimulationMode) {
+                // 打开模拟模式：关闭GPS
+                if (gpsWatchId) {
+                    navigator.geolocation.clearWatch(gpsWatchId);
+                    gpsWatchId = null;
+                }
+                document.getElementById('gps-status-text').innerText = "Modalità simulazione: clicca sulla mappa";
+                document.getElementById('gps-dot').classList.remove('active');
+                
+                // 自动给出一个初始测试位置
+                updateUserPosition(45.4720, 9.1885, "Fai clic sulla mappa per simulare il movimento.");
+            } else {
+                // 关闭模拟模式：重启真实GPS
+                startRealGPS();
+            }
+        });
+
+        // 监听编辑开关的变化
+        document.getElementById('edit-toggle').addEventListener('change', (e) => {
+            const isEditModeOn = e.target.checked;
+            if (isEditModeOn) {
+                // 打开黄点并显示导出按钮
+                editDots.forEach(marker => marker.addTo(map));
+                document.getElementById('export-config').style.display = 'block';
+            } else {
+                // 取消当前编辑，隐藏所有黄点和导出按钮
+                disableEditMode();
+                editDots.forEach(marker => map.removeLayer(marker));
+                document.getElementById('export-config').style.display = 'none';
+            }
+        });
+
+        document.getElementById('export-config').addEventListener('click', () => {
+            let output = "const zones = [\n";
+            zones.forEach((z, i) => {
+                output += `    {\n`;
+                output += `        id: "${z.id}",\n`;
+                output += `        name: "${z.name}",\n`;
+                output += `        lat: ${z.lat.toFixed(5)}, \n`;
+                output += `        lng: ${z.lng.toFixed(5)},\n`;
+                output += `        radius: ${z.radius.toFixed(1)},\n`;
+                output += `        audioUrl: "${z.audioUrl}",\n`;
+                output += `        isLoop: ${z.isLoop},\n`;
+                output += `        playToEnd: ${z.playToEnd},\n`;
+                output += `        fadeInMs: ${z.fadeInMs},\n`;
+                output += `        fadeOutMs: ${z.fadeOutMs},\n`;
+                output += `        color: "${z.color}",\n`;
+                output += `        description: "${z.description.replace(/\n/g, '\\n')}"\n`;
+                output += `    }${i < zones.length - 1 ? ',' : ''}\n`;
+            });
+            output += "];";
+            
+            document.getElementById('export-textarea').value = output;
+            document.getElementById('export-modal').style.display = 'flex';
+        });
+
+        document.getElementById('close-modal-btn').addEventListener('click', () => {
+            document.getElementById('export-modal').style.display = 'none';
+        });
+
+    </script>
+</body>
+</html>
