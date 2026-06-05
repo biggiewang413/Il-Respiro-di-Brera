@@ -758,7 +758,11 @@
                 iconSize: [20, 20],
                 iconAnchor: [10, 10]
             });
-            userMarker = L.marker(centerView, {icon: userIcon, zIndexOffset: 1000}).addTo(map);
+            
+            // 修改：将初始标记点放在所有声场圆圈的外部（布雷拉以南约200多米处）
+            // 确保刚进入页面时不会意外触发任何声场，必须有明显的"进入"动作
+            const outOfBoundsPos = [45.4695, 9.1894];
+            userMarker = L.marker(outOfBoundsPos, {icon: userIcon, zIndexOffset: 1000}).addTo(map);
 
             map.on('click', function(e) {
                 if (activeEditZoneId) {
@@ -998,7 +1002,7 @@
                     (position) => {
                         if (isSimulationMode) return; 
                         const { latitude, longitude, accuracy } = position.coords;
-                        updateUserPosition(latitude, longitude, `GPS attivato`);
+                        updateUserPosition(latitude, longitude, `Precisione GPS: ±${Math.round(accuracy)}m`);
                     },
                     (error) => {
                         let errMsg = "Errore sconosciuto o limitazioni ambientali";
@@ -1082,8 +1086,8 @@
                 document.getElementById('gps-status-text').innerText = "Modalità simulazione: clicca sulla mappa";
                 document.getElementById('gps-dot').classList.remove('active');
                 
-                // 自动给出一个初始测试位置
-                updateUserPosition(45.4720, 9.1885, "Fai clic sulla mappa per simulare il movimento.");
+                // 修改：自动给出一个初始测试位置，同样设在所有声场外部的安全点
+                updateUserPosition(45.4695, 9.1894, "Fai clic sulla mappa per simulare il movimento.");
             } else {
                 // 关闭模拟模式：重启真实GPS
                 startRealGPS();
