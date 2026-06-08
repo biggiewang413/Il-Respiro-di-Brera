@@ -473,7 +473,7 @@
                 isLoop: true,
                 playToEnd: false,
                 fadeInMs: 1000,
-                fadeOutMs: 1000,
+                fadeOutMs: 3000,
                 color: "#38bdf8",
                 description: "Abbassa lo sguardo sui tuoi passi. Questa strada di ciottoli che stai calpestando è un archivio di traiettorie invisibili.\nCi camminiamo sopra ogni giorno, distratti, mentre il rumore delle nostre scarpe si unisce a quello delle centinaia di persone che, in questo preciso momento, ti passano accanto. Ma se ascolti con attenzione, sotto il frastuono del presente c'è un'eco più profonda. Ogni pietra trattiene il peso dei passi di ieri: gli zoccoli dei cavalli, le scarpe consumate degli studenti dell'Ottocento, la fretta di chi ha cercato qui la propria rivoluzione artistica.\nIl selciato non dimentica. Tu non sei un semplice passante, ma l'ennesimo ritmo che si aggiunge a questa infinita composizione collettiva. Continua a camminare, e ascolta come la tua stessa presenza risuona nella pietra."
             },
@@ -501,7 +501,7 @@
                 isLoop: true,
                 playToEnd: false,
                 fadeInMs: 1000,
-                fadeOutMs: 1000,
+                fadeOutMs: 3000,
                 color: "#38bdf8",
                 description: "Guarda in basso. Questo frammento di finestra è la fessura dove il mondo di sopra e il mondo di sotto si sfiorano, senza mai stringersi la mano.\nQui si raccolgono le voci che cadono dai marciapiedi, il vento che spazza il cortile, la polvere che scende e si posa, lenta, come un segreto che nessuno vuole svelare. Sono i suoni nascosti, le frequenze invisibili di Brera. Esistono qui, nell’ombra, respirando sotto il livello dei nostri sguardi distratti.\nPassiamo oltre, ogni giorno, calpestando la loro presenza senza accorgercene. Ma loro restano, a fare da custodi alle fondamenta di questo luogo.\nAscolta questo respiro sotterraneo. È la voce di ciò che vive nell'ombra, e che pure, continua a sostenerci."
             },
@@ -515,7 +515,7 @@
                 isLoop: true,
                 playToEnd: false,
                 fadeInMs: 1000,
-                fadeOutMs: 1000,
+                fadeOutMs: 3000,
                 color: "#38bdf8",
                 description: "Questa è la finestra dell'aula 21A. Quello che stai per ascoltare non è un rumore casuale, ma la voce stessa di questa stanza.\nDurante una lezione di Sound Design, abbiamo trasformato questo spazio e gli oggetti custoditi al suo interno in strumenti musicali, dando vita a un'improvvisazione estemporanea. Ogni cosa ha risposto al nostro tocco, liberando una musica nascosta che la quotidianità di solito mette a tacere.\nQuesta finestra ha vibrato insieme a noi, catturando l'eco di quel momento in cui lo spazio dell'accademia è diventato pura vibrazione. Ascolta il dialogo tra la materia e l'immaginazione."
             },
@@ -529,7 +529,7 @@
                 isLoop: true,
                 playToEnd: false,
                 fadeInMs: 1000,
-                fadeOutMs: 1000,
+                fadeOutMs: 3000,
                 color: "#38bdf8",
                 description: "Ascolta questo rintocco. Irrompe all'improvviso, squarciando il silenzio del tuo cammino.\nOra, fermati. Girati indietro, verso la direzione da cui sei venuto. Guarda lontano, oltre i tetti, verso l’orizzonte: là si erge il campanile, custode invisibile del tempo che passa.\nQuesto suono attraversa lo spazio per raggiungerti, collegando il punto esatto in cui ti trovi con il cuore della città là fuori. È un ponte invisibile fatto di vibrazioni, un richiamo che da secoli misura i passi di chi attraversa questi cortili.\nResta così, immobile, con lo sguardo rivolto al passato del tuo percorso, mentre il bronzo continua a far tremare l'aria intorno a te."
             },
@@ -543,7 +543,7 @@
                 isLoop: true,
                 playToEnd: false,
                 fadeInMs: 1000,
-                fadeOutMs: 1000,
+                fadeOutMs: 3000,
                 color: "#38bdf8",
                 description: "Ascolta lo scorrere dell'acqua. Chiudi gli occhi per un istante e prova a indovinare: quale suono appartiene al mondo reale e quale sta nascendo dentro le tue cuffie?\nIn questo punto, le frequenze si fondono. L'acqua reale che bagna la pietra si intreccia con la sua stessa eco digitale, creando un flusso continuo che non ha inizio né fine. L'acqua è la memoria fluida di questo luogo: cancella i rumori del giorno e pulisce lo spazio per accogliere i tuoi pensieri.\nNon cercare di separare i due mondi. Lascia che la corrente finta e quella vera diventino un unico respiro. Tu stesso, in questo momento, sei una goccia che attraversa il tempo di Brera."
             },
@@ -557,7 +557,7 @@
                 isLoop: true,
                 playToEnd: false,
                 fadeInMs: 1000,
-                fadeOutMs: 1000,
+                fadeOutMs: 3000,
                 color: "#38bdf8",
                 description: "Alza lo sguardo verso le fronde. Riesci a sentire il canto degli uccelli?\nOra prova a capire: quel cinguettio che ti sfiora l’orecchio proviene dai rami sopra di te o abita nello spazio digitale delle tue cuffie? Qui, il confine tra la natura reale e la sua riproduzione si dissolve del tutto. Abbiamo catturato la voce di questi alberi per restituirtela, creando un inganno per l’udito in cui il presente e il registrato volano insieme.\nNon importa scoprire la verità. Lascia che i volatili veri e le loro ombre sonore si rincorrano nel tuo ascolto. Brera respira anche attraverso questo canto, sospeso tra il legno della terra e l'aria della tua mente."
             },
@@ -1002,7 +1002,7 @@
                     (position) => {
                         if (isSimulationMode) return; 
                         const { latitude, longitude, accuracy } = position.coords;
-                        updateUserPosition(latitude, longitude, `Precisione GPS: ±${Math.round(accuracy)}m`);
+                        updateUserPosition(latitude, longitude, `GPS attivato.`);
                     },
                     (error) => {
                         let errMsg = "Errore sconosciuto o limitazioni ambientali";
